@@ -1,0 +1,1526 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Análisis Bibliométrico</title>
+    <link rel="icon" href="../static/logo.png" type="image/png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <!-- Actualizado a una versión específica de Plotly -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+     <script src="https://unpkg.com/vis-network@9.1.2/dist/vis-network.min.js"></script>
+    <style>
+        :root {
+            --header-bg: #2c3e50;
+            --footer-bg: #34495e;
+            --body-bg: #ecf0f1;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --accent-color: #3498db;
+            --primary-btn-bg: #3498db;
+            --primary-btn-hover-bg: #2980b9;
+            --secondary-btn-color: #2c3e50;
+        }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.6)), url('../static/1762210244.png');
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: var(--text-color);
+            padding-top: 80px;
+        }
+        .navbar {
+            background-color: var(--header-bg);
+            font-weight: 700;
+        }
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        .container {
+            max-width: 1140px;
+        }
+        .page-title-container {
+            background: linear-gradient(135deg, var(--header-bg) 0%, var(--accent-color) 100%);
+            color: white;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-radius: 0.5rem;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border: none;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            margin-bottom: 2rem;
+            transition: transform 0.2s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card-header {
+            background-color: transparent;
+            border-bottom: 1px solid #dee2e6;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--header-bg);
+        }
+        #scraper-output, #similarity-results, #sorted-articles-list {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            min-height: 100px;
+            max-height: 500px;
+            overflow-y: auto;
+            border-radius: 0.25rem;
+            padding: 1rem;
+            border: 1px solid var(--footer-bg);
+        }
+        .btn {
+            font-weight: 700;
+            border-radius: 0.3rem;
+            padding: 0.5rem 1rem;
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-primary {
+            background-color: var(--primary-btn-bg);
+            border-color: var(--primary-btn-bg);
+        }
+        .btn-primary:hover {
+            background-color: var(--primary-btn-hover-bg);
+            border-color: var(--primary-btn-hover-bg);
+            transform: translateY(-2px);
+        }
+        .btn-outline-primary {
+            color: var(--primary-btn-bg);
+            border-color: var(--primary-btn-bg);
+        }
+        .btn-outline-primary:hover {
+            background-color: var(--primary-btn-bg);
+            color: white;
+        }
+        footer {
+            background-color: var(--footer-bg);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="d-inline-block align-middle me-2">
+                    <path d="M3 12H6L9 4L15 20L18 12H21" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Análisis Bibliométrico
+            </a>
+            <div class="ms-auto text-white">
+                Por: Maria Luisa Alonso & Victor Manuel Alzate
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-title-container text-center">
+            <h1 class="display-5">Panel de Control de Análisis</h1>
+            <p class="lead">Herramientas para el procesamiento y análisis de datos bibliométricos.</p>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Requerimiento 1: Automatización de Descarga de Datos</div>
+            <div class="card-body">
+                <form id="scraper-form">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="database" class="form-label">Fuente de Datos</label>
+                            <select class="form-select" id="database" name="database">
+                                <option value="ieee">IEEE Xplore</option>
+                                <option value="sciencedirect">ScienceDirect</option>
+                                <option value="sage">Sage Journals</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="email" class="form-label">Email (Requerido por la fuente)</label>
+                            <input type="email" class="form-control" id="email" name="email" placeholder="su@email.com" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="password" class="form-label">Contraseña (Requerido por la fuente)</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="run-scraper-btn">
+                        <span id="scraper-spinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
+                        Ejecutar Scraper y Unificador
+                    </button>
+                </form>
+                <hr>
+                <h5>Salida del Proceso:</h5>
+                <pre id="scraper-output">Aquí se mostrará la salida de los scripts...</pre>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Requerimiento 2: Análisis de Similitud Textual</div>
+            <div class="card-body">
+                <p>Selecciona dos artículos de la lista para calcular la similitud entre sus abstracts.</p>
+                <button class="btn btn-outline-primary mb-3" id="load-articles-btn">
+                    <span id="articles-spinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
+                    Cargar Artículos
+                </button>
+                <div id="similarity-form-container" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-5 mb-3">
+                            <label for="article1" class="form-label">Artículo 1</label>
+                            <select id="article1" class="form-select"></select>
+                        </div>
+                        <div class="col-md-5 mb-3">
+                            <label for="article2" class="form-label">Artículo 2</label>
+                            <select id="article2" class="form-select"></select>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label for="similarity-algorithm" class="form-label">Algoritmo</label>
+                            <select id="similarity-algorithm" class="form-select">
+                                <option value="levenshtein" selected>Levenshtein</option>
+                                <option value="coseno">Coseno</option>
+                                <option value="jaccard">Jaccard</option>
+                                <option value="dice">Dice</option>
+                                <option value="ia_mini_lm">IA (MiniLM)</option>
+                                <option value="ia_paraphrase">IA (Paraphrase)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="calculate-similarity-btn">Calcular Similitud</button>
+                </div>
+                <hr id="similarity-hr" style="display: none;">
+                <h5 id="similarity-results-title" style="display: none;">Resultado del Análisis de Similitud:</h5>
+                <pre id="similarity-results" style="display: none;"></pre>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Requerimiento 3: Análisis de Frecuencia de Palabras</div>
+            <div class="card-body">
+                <p>Calcula la frecuencia de un conjunto predefinido de palabras clave y utiliza TF-IDF para descubrir nuevos términos relevantes en los abstracts de los artículos.</p>
+                <button class="btn btn-primary" id="run-frequency-analysis-btn">
+                    <span id="frequency-spinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
+                    Ejecutar Análisis de Frecuencia
+                </button>
+                <div id="frequency-results-container" class="mt-4" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Requerimiento 4: Agrupamiento Jerárquico</div>
+            <div class="card-body">
+                <p>Construye un dendrograma (árbol jerárquico) para visualizar cómo se agrupan los artículos según la similitud de sus abstracts.</p>
+                <form id="clustering-form">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="clustering-method" class="form-label">Método de Agrupamiento</label>
+                            <select name="metodo" id="clustering-method" class="form-select">
+                                <option value="ward" selected>Ward</option>
+                                <option value="complete">Complete Linkage</option>
+                                <option value="average">Average Linkage</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="num-articles-cluster" class="form-label">Número de Artículos a Analizar</label>
+                            <input type="number" class="form-control" id="num-articles-cluster" name="num_articulos" value="30" min="10" max="100">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="run-clustering-analysis-btn">
+                        <span id="clustering-spinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
+                        Generar Dendrograma
+                    </button>
+                </form>
+                <div id="clustering-results-container" class="mt-4" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Requerimiento 5: Análisis Visual de la Producción Científica</div>
+            <div class="card-body">
+                <p>Genera un análisis visual completo de los datos bibliométricos, incluyendo un mapa de calor de autores, nubes de palabras y líneas de tiempo.</p>
+                <button class="btn btn-primary" id="run-visualization-analysis-btn">
+                    <span id="visualization-spinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
+                    Generar Visualizaciones
+                </button>
+                <div id="visualization-results-container" class="mt-4" style="display: none;">
+                    <div class="d-flex justify-content-end mb-3">
+                        <button class="btn btn-success" id="export-pdf-btn" disabled>
+                            <span id="pdf-spinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
+                            Exportar a PDF
+                        </button>
+                    </div>
+                    <div id="visualizations-content"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">Seguimiento 1: Análisis de Algoritmos de Ordenamiento</div>
+            <div class="card-body">
+                <p>Ejecuta un análisis de rendimiento de algoritmos de ordenamiento sobre los artículos del archivo <code>articulos_unicos.bib</code>.</p>
+                <form id="sorting-form">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="algorithm" class="form-label">Algoritmo de Ordenamiento</label>
+                            <select name="algorithm" id="algorithm" class="form-select">
+                                <option value="all" selected>Ejecutar Todos</option>
+                                <option value="TimSort">TimSort</option>
+                                <option value="Comb Sort">Comb Sort</option>
+                                <option value="Selection Sort">Selection Sort</option>
+                                <option value="Tree Sort">Tree Sort</option>
+                                <option value="Pigeonhole Sort">Pigeonhole Sort</option>
+                                <option value="BucketSort">BucketSort</option>
+                                <option value="QuickSort">QuickSort</option>
+                                <option value="HeapSort">HeapSort</option>
+                                <option value="Bitonic Sort">Bitonic Sort</option>
+                                <option value="Gnome Sort">Gnome Sort</option>
+                                <option value="Binary Insertion Sort">Binary Insertion Sort</option>
+                                <option value="RadixSort">RadixSort</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="size" class="form-label">Tamaño de la Muestra</label>
+                            <input type="number" class="form-control" id="size" name="size" value="1000" min="10" max="50000">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="run-sorting-analysis-btn">
+                        <span id="sorting-spinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
+                        Ejecutar Análisis de Ordenamiento
+                    </button>
+                </form>
+                <div id="sorting-results-container" class="mt-4" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+
+<div class="card mt-4" style="width: 90%; max-width: 1110px; margin: 0 auto; word-wrap: break-word; overflow-wrap: break-word;">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0 fw-bold">
+      Seguimiento 2 - Requerimiento 1, Análisis de Red de Citaciones
+    </h5>
+  </div>
+  <div class="card-body">
+    <p class="text-muted">
+      Construye y analiza un <strong>grafo dirigido</strong> donde cada nodo es un artículo científico 
+      y cada arista representa una citación inferida por similitud de títulos, autores, abstract y palabras clave.
+    </p>
+
+    <!-- PUNTO 1: CONSTRUCCIÓN DEL GRAFO -->
+    <div class="mb-4">
+      <h6 class="mb-0 fw-bold">
+        1. Construcción Automática del Grafo
+      </h6>
+      <p class="text-muted small mb-3">
+        Genera el grafo dirigido con pesos en las aristas según la similitud entre artículos (TF-IDF + Coseno).
+      </p>
+      <div class="row g-3 align-items-end mb-3">
+        <div class="col-md-3">
+          <label class="form-label">Umbral de Similitud(0.0 - 1.0):</label>
+          <input id="thrInputCitaciones" type="number" min="0" max="1" step="0.05" 
+                 value="0.25" class="form-control">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">Filtrar por Citaciones:</label>
+          <select id="minCitacionesSelect" class="form-select">
+            <option value="">Todos los artículos</option>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button id="btnGenerarGrafoCitaciones" class="btn btn-primary w-100">
+            <span class="btn-text"> Generar Grafo</span>
+            <span class="spinner-border spinner-border-sm ms-2" style="display:none;"></span>
+          </button>
+        </div>
+      </div>
+
+      <div id="statsCitacionesContainer" class="row g-3 mt-3" style="display:none;">
+        <div class="col-md-3">
+          <div class="bg-primary text-white rounded p-3 text-center">
+            <h4 class="mb-1" id="statNodosCitaciones">0</h4>
+            <small>Nodos (Artículos)</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="bg-success text-white rounded p-3 text-center">
+            <h4 class="mb-1" id="statAristasCitaciones">0</h4>
+            <small>Aristas (Citaciones)</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="bg-warning text-dark rounded p-3 text-center">
+            <h4 class="mb-1" id="statDensidadCitaciones">0.0000</h4>
+            <small>Densidad</small>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="bg-danger text-white rounded p-3 text-center">
+            <h4 class="mb-1" id="statGradoCitaciones">0.0</h4>
+            <small>Grado Medio</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 " style="margin-bottom: 50px;"> 
+  <h6 class="fw-bold mb-3">📊 Visualización de la Red de Citaciones</h6>
+  <div id="grafoCitacionesContainer" style="width: 100%; height: 600px; display: none;"></div>
+  <div id="imagenGrafoContainer" class="text-center" style="display:none;"></div>
+</div>
+<hr style="border-top: 1px solid #555; margin-top: 20px; margin-bottom: 20px;">
+
+
+      <!-- Info Nodo Seleccionado -->
+      <div id="infoNodoCitacionesContainer" class="alert alert-light mt-3" style="display:none;">
+        <h6>🔍 Artículo Seleccionado</h6>
+        <div id="infoNodoCitaciones"></div>
+      </div>
+    </div>
+
+    <!-- PUNTO 2: CAMINOS MÍNIMOS -->
+    <div class="mb-4">
+      <h6 class="mb-0 fw-bold">2. Cálculo de Caminos Mínimos
+      </h6>
+      <p class="text-muted small mb-3">
+        Encuentra la ruta más corta entre dos artículos usando <strong>Dijkstra</strong> o <strong>Floyd-Warshall</strong>.
+      </p>
+      <button class="btn btn-outline-primary mb-3" id="loadArticlesBtnCaminos">
+          <span id="caminos-articles-spinner" class="spinner-border spinner-border-sm" role="status" aria-hidden="true" style="display: none;"></span>
+          <span class="btn-text">Cargar Artículos para Selección</span>
+      </button>
+      <div id="caminos-form-container" style="display: none;">
+          <div class="row g-3 align-items-end mb-3">
+            <div class="col-md-4">
+              <label for="origenSelectCitaciones" class="form-label">Artículo Origen:</label>
+              <select id="origenSelectCitaciones" class="form-select"></select>
+            </div>
+            <div class="col-md-4">
+              <label for="destinoSelectCitaciones" class="form-label">Artículo Destino:</label>
+              <select id="destinoSelectCitaciones" class="form-select"></select>
+            </div>
+            <div class="col-md-4">
+              <label for="algoritmoCaminoSelect" class="form-label">Algoritmo:</label>
+              <select id="algoritmoCaminoSelect" class="form-select">
+                <option value="dijkstra" selected>Dijkstra (Recomendado)</option>
+                <option value="floyd-warshall">Floyd-Warshall</option>
+              </select>
+            </div>
+          </div>
+          <button id="btnCaminoCitaciones" class="btn btn-primary w-100 mt-2">
+              <span class="btn-text"> Calcular Camino</span>
+              <span class="spinner-border spinner-border-sm ms-2" style="display:none;"></span>
+          </button>
+      </div>
+      <div id="caminoCitacionesContainer" style="display:none;"></div>
+    </div>
+
+    <!-- PUNTO 3: COMPONENTES FUERTEMENTE CONEXAS -->
+    <div>
+      <h6 class="mb-0 fw-bold">
+        3. Componentes Fuertemente Conexas (Tarjan)
+      </h6>
+      <p class="text-muted small mb-3">
+        Identifica grupos de artículos fuertemente interrelacionados usando el algoritmo de Tarjan.
+      </p>
+      <button id="btnComponentesCitaciones" class="btn btn-primary mb-3">
+        <span class="btn-text"> Analizar Componentes</span>
+        <span class="spinner-border spinner-border-sm ms-2" style="display:none;"></span>
+      </button>
+      <div id="componentesCitacionesContainer" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- JAVASCRIPT MEJORADO PARA SEGUIMIENTO 2 - REQUERIMIENTO 1 -->
+<!-- ============================================================ -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('✅ Iniciando Seguimiento 2 - Requerimiento 1 (Versión Mejorada)');
+
+  const btnGenerarCitaciones = document.getElementById('btnGenerarGrafoCitaciones');
+  const minCitacionesSelect = document.getElementById('minCitacionesSelect');
+  const thrInputCitaciones = document.getElementById('thrInputCitaciones');
+  const imagenGrafoContainer = document.getElementById('imagenGrafoContainer');
+  const statsCitacionesContainer = document.getElementById('statsCitacionesContainer');
+  const infoNodoCitacionesContainer = document.getElementById('infoNodoCitacionesContainer');
+  const infoNodoCitaciones = document.getElementById('infoNodoCitaciones');
+  const btnCaminoCitaciones = document.getElementById('btnCaminoCitaciones');
+  const loadArticlesBtnCaminos = document.getElementById('loadArticlesBtnCaminos');
+  const caminosFormContainer = document.getElementById('caminos-form-container');
+  const origenSelectCitaciones = document.getElementById('origenSelectCitaciones');
+  const destinoSelectCitaciones = document.getElementById('destinoSelectCitaciones');
+  const algoritmoCaminoSelect = document.getElementById('algoritmoCaminoSelect');
+  const caminoCitacionesContainer = document.getElementById('caminoCitacionesContainer');
+  const btnComponentesCitaciones = document.getElementById('btnComponentesCitaciones');
+  const componentesCitacionesContainer = document.getElementById('componentesCitacionesContainer');
+
+  let grafoCitacionesData = null;
+
+  // ========================================
+  // CARGAR VALORES DE CITACIONES
+  // ========================================
+  async function cargarValoresCitaciones() {
+    try {
+      const res = await fetch('/grafo-citaciones/valores');
+      const data = await res.json();
+      const valores = data.valores || [];
+      
+      minCitacionesSelect.innerHTML = '<option value="">Todos los artículos</option>';
+      valores.forEach(v => {
+        if (v > 0) {
+          minCitacionesSelect.appendChild(new Option(`≥ ${v} citaciones`, v));
+        }
+      });
+      console.log('✅ Valores de citaciones cargados:', valores);
+    } catch (err) {
+      console.error('❌ Error cargando valores:', err);
+    }
+  }
+
+  cargarValoresCitaciones();
+
+  // ========================================
+  // PUNTO 1: GENERAR GRAFO DE CITACIONES
+  // ========================================
+  if (btnGenerarCitaciones) {
+    btnGenerarCitaciones.addEventListener('click', async () => {
+      const spinner = btnGenerarCitaciones.querySelector('.spinner-border');
+      const btnText = btnGenerarCitaciones.querySelector('.btn-text');
+      
+      spinner.style.display = 'inline-block';
+      btnText.textContent = 'Generando grafo...';
+      btnGenerarCitaciones.disabled = true;
+      
+      // Ocultar secciones anteriores
+      statsCitacionesContainer.style.display = 'none';
+      imagenGrafoContainer.style.display = 'none';
+      infoNodoCitacionesContainer.style.display = 'none';
+      caminoCitacionesContainer.style.display = 'none';
+      componentesCitacionesContainer.style.display = 'none';
+
+      try {
+        const minCit = parseInt(minCitacionesSelect.value) || undefined;
+        const query = new URLSearchParams();
+        if (minCit !== undefined) query.append('min_citaciones', minCit);
+
+        const res = await fetch(`/grafo-citaciones?${query.toString()}`, { method: 'POST' });
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`HTTP ${res.status}: ${errorText}`);
+        }
+        
+        const data = await res.json();
+
+        if (!data.grafo || !data.grafo.nodes) {
+          throw new Error('Datos incompletos en la respuesta del servidor');
+        }
+        
+        grafoCitacionesData = data;
+
+        // ===== MOSTRAR IMAGEN BASE64 (VISUALIZACIÓN PROFESIONAL) =====
+        if (data.grafico_base64) {
+          const imgDiv = document.createElement('div');
+          imgDiv.className = 'position-relative';
+          
+          const img = document.createElement('img');
+          img.src = `data:image/png;base64,${data.grafico_base64}`;
+          img.alt = "Red de Citaciones entre Artículos Científicos";
+          img.classList.add('img-fluid', 'rounded');
+          img.style.maxWidth = '100%';
+          img.style.height = 'auto';
+          img.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+          
+          imgDiv.appendChild(img);
+          imagenGrafoContainer.innerHTML = '';
+          imagenGrafoContainer.appendChild(imgDiv);
+          imagenGrafoContainer.style.display = 'block';
+        }
+
+        // ===== MOSTRAR ESTADÍSTICAS =====
+        document.getElementById('statNodosCitaciones').textContent = data.grafo.nodes.length;
+        document.getElementById('statAristasCitaciones').textContent = data.grafo.edges.length;
+        document.getElementById('statDensidadCitaciones').textContent = data.analisis.densidad.toFixed(4);
+        document.getElementById('statGradoCitaciones').textContent = data.analisis.grado_medio.toFixed(2);
+        statsCitacionesContainer.style.display = 'flex';
+
+        // ===== MENSAJE DE ÉXITO =====
+        const successMsg = document.createElement('div');
+        successMsg.className = 'alert alert-success mt-3 shadow-sm';
+        successMsg.innerHTML = `
+          <strong>✅ Grafo generado exitosamente</strong>
+          <ul class="mb-0 mt-2">
+            <li>📊 <strong>${data.grafo.nodes.length}</strong> nodos (artículos científicos)</li>
+            <li>🔗 <strong>${data.grafo.edges.length}</strong> aristas (citaciones inferidas)</li>
+            <li>📈 Densidad: <strong>${data.analisis.densidad.toFixed(4)}</strong></li>
+            <li>🎯 Grado medio: <strong>${data.analisis.grado_medio.toFixed(2)}</strong></li>
+          </ul>
+        `;
+        
+        // Insertar después de las estadísticas
+        statsCitacionesContainer.parentNode.insertBefore(successMsg, statsCitacionesContainer.nextSibling);
+
+      } catch (err) {
+        console.error('❌ Error generando grafo:', err);
+        
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-danger mt-3';
+        errorDiv.innerHTML = `
+          <strong>❌ Error al generar el grafo</strong>
+          <p class="mb-0 mt-2">${err.message}</p>
+        `;
+        statsCitacionesContainer.parentNode.insertBefore(errorDiv, statsCitacionesContainer.nextSibling);
+      } finally {
+        spinner.style.display = 'none';
+        btnText.textContent = 'Generar Grafo';
+        btnGenerarCitaciones.disabled = false;
+      }
+    });
+  }
+
+  // ========================================
+  // PUNTO 2: CAMINO MÍNIMO - LOAD ARTICLES
+  // ========================================
+  if (loadArticlesBtnCaminos) {
+    loadArticlesBtnCaminos.addEventListener('click', async () => {
+        const spinner = loadArticlesBtnCaminos.querySelector('.spinner-border');
+        const btnText = loadArticlesBtnCaminos.querySelector('.btn-text');
+        spinner.style.display = 'inline-block';
+        if(btnText) btnText.textContent = 'Cargando...';
+        loadArticlesBtnCaminos.disabled = true;
+        try {
+            const response = await fetch('/articulos');
+            const data = await response.json();
+            if (data.error) {
+                alert(data.error);
+                if(btnText) btnText.textContent = 'Error al Cargar';
+                return;
+            }
+            
+            // Ordenar los datos alfabéticamente por título
+            data.sort((a, b) => a.title.localeCompare(b.title));
+
+            origenSelectCitaciones.innerHTML = '';
+            destinoSelectCitaciones.innerHTML = '';
+            data.forEach(article => {
+                const option1 = new Option(article.title, article.id);
+                const option2 = new Option(article.title, article.id);
+                origenSelectCitaciones.add(option1);
+                destinoSelectCitaciones.add(option2);
+            });
+            caminosFormContainer.style.display = 'block';
+            if(btnText) btnText.textContent = 'Artículos Cargados';
+            // Don't re-enable the button, as it's a one-time load.
+        } catch (error) {
+            alert('Error al cargar los artículos: ' + error);
+            if(btnText) btnText.textContent = 'Error al Cargar';
+        } finally {
+            spinner.style.display = 'none';
+        }
+    });
+  }
+
+  // ========================================
+  // PUNTO 2: CAMINO MÍNIMO
+  // ========================================
+  if (btnCaminoCitaciones) {
+    btnCaminoCitaciones.addEventListener('click', async () => {
+      const spinner = btnCaminoCitaciones.querySelector('.spinner-border');
+      const btnText = btnCaminoCitaciones.querySelector('.btn-text');
+      
+      const origen = origenSelectCitaciones.value;
+      const destino = destinoSelectCitaciones.value;
+      const algoritmo = algoritmoCaminoSelect.value;
+
+      if (!origen || !destino) {
+        alert('⚠️ Debes seleccionar ambos artículos (origen y destino)');
+        return;
+      }
+
+      spinner.style.display = 'inline-block';
+      btnText.textContent = 'Calculando ruta óptima...';
+      btnCaminoCitaciones.disabled = true;
+
+      try {
+        const res = await fetch(`/camino-minimo?origen=${encodeURIComponent(origen)}&destino=${encodeURIComponent(destino)}&algoritmo=${algoritmo}`);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        
+        const data = await res.json();
+
+        if (data.error) {
+          caminoCitacionesContainer.innerHTML = `
+            <div class="alert alert-danger shadow-sm">
+              <strong>❌ ${data.error}</strong>
+            </div>
+          `;
+          caminoCitacionesContainer.style.display = 'block';
+          return;
+        }
+
+        const camino = data.camino || [];
+        
+        if (camino.length === 0) {
+          caminoCitacionesContainer.innerHTML = `
+            <div class="alert alert-warning shadow-sm">
+              <strong>⚠️ No existe camino entre los artículos seleccionados</strong>
+            </div>
+          `;
+          caminoCitacionesContainer.style.display = 'block';
+          return;
+        }
+
+        // ===== MOSTRAR RESULTADO CON DISEÑO MEJORADO =====
+        let html = `
+          <div class="card shadow-sm" style="border-left: 4px solid #27AE60;">
+            <div class="card-body">
+              <h6 class="card-title" style="color: #27AE60;">✅ Camino Mínimo Encontrado</h6>
+              
+              <div class="row g-3 mt-2 mb-3">
+                <div class="col-md-3">
+                  <div class="text-center p-2 rounded" style="background-color: #E8F8F5;">
+                    <small class="text-muted d-block">Algoritmo</small>
+                    <strong style="color: #27AE60;">${data.algoritmo}</strong>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="text-center p-2 rounded" style="background-color: #EBF5FB;">
+                    <small class="text-muted d-block">Longitud</small>
+                    <strong style="color: #3498DB;">${data.longitud} pasos</strong>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="text-center p-2 rounded" style="background-color: #FEF5E7;">
+                    <small class="text-muted d-block">Costo Total</small>
+                    <strong style="color: #F39C12;">${data.costo_total.toFixed(4)}</strong>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="text-center p-2 rounded" style="background-color: #FADBD8;">
+                    <small class="text-muted d-block">Similitud Media</small>
+                    <strong style="color: #E74C3C;">${(data.similitud_promedio * 100).toFixed(2)}%</strong>
+                  </div>
+                </div>
+              </div>
+
+              <h6 class="mt-3 mb-2" style="color: #2C3E50;">📍 Ruta del Camino:</h6>
+              <div class="d-flex flex-wrap gap-2 mb-3">
+        `;
+        
+        camino.forEach((id, idx) => {
+          html += `<span class="badge px-3 py-2" style="background-color: #3498DB; font-size: 0.9rem;">${id}</span>`;
+          if (idx < camino.length - 1) {
+            html += `<span style="color: #7F8C8D; font-weight: bold;">→</span>`;
+          }
+        });
+        
+        html += `</div>`;
+
+        if (data.edges && data.edges.length > 0) {
+          html += `
+            <h6 class="mt-3 mb-2" style="color: #2C3E50;">🔗 Conexiones Detalladas:</h6>
+            <div class="list-group">
+          `;
+          data.edges.forEach((edge, idx) => {
+            html += `
+              <div class="list-group-item" style="border-left: 3px solid #3498DB;">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span><strong>${idx + 1}.</strong> ${edge.from} → ${edge.to}</span>
+                  <span class="badge" style="background-color: #27AE60;">${(edge.weight * 100).toFixed(2)}%</span>
+                </div>
+              </div>
+            `;
+          });
+          html += `</div>`;
+        }
+
+        html += `</div></div>`;
+
+        caminoCitacionesContainer.innerHTML = html;
+        caminoCitacionesContainer.style.display = 'block';
+
+      } catch (err) {
+        console.error('❌ Error calculando camino:', err);
+        caminoCitacionesContainer.innerHTML = `
+          <div class="alert alert-danger shadow-sm">
+            <strong>Error:</strong> ${err.message}
+          </div>
+        `;
+        caminoCitacionesContainer.style.display = 'block';
+      } finally {
+        spinner.style.display = 'none';
+        btnText.textContent = ' Calcular Camino';
+        btnCaminoCitaciones.disabled = false;
+      }
+    });
+  }
+
+if (btnComponentesCitaciones) {
+    btnComponentesCitaciones.addEventListener('click', async () => {
+      if (!grafoCitacionesData) {
+        alert('⚠️ Primero debes generar el grafo (Punto 1)');
+        return;
+      }
+      const spinner = btnComponentesCitaciones.querySelector('.spinner-border');
+      const btnText = btnComponentesCitaciones.querySelector('.btn-text');
+      spinner.style.display = 'inline-block';
+      btnText.textContent = 'Analizando...';
+      btnComponentesCitaciones.disabled = true;
+
+      try {
+        const res = await fetch('/analizar-citaciones', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            tipo_analisis: 'componentes_conexas',
+            sim_threshold: thrInputCitaciones.value
+          })
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (data.error) {
+          alert('❌ ' + data.error);
+          return;
+        }
+
+        // ✅ Protección total contra undefined
+        const total = data.total_componentes ?? 'N/A';
+        const algoritmo = data.algoritmo ?? 'Tarjan';
+        const mayorNodos = data.mayor_componente?.num_nodos ?? 0;
+
+        let html = `
+          <div class="card shadow-sm mb-3">
+            <div class="card-body">
+              <h6 class="card-title text-danger">📊 Resumen de Componentes</h6>
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <div class="text-center p-2 rounded bg-light">
+                    <h5 class="text-danger">${total}</h5>
+                    <small>Total</small>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="text-center p-2 rounded bg-light">
+                    <h5 class="text-primary">${mayorNodos}</h5>
+                    <small>Mayor Componente</small>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="text-center p-2 rounded bg-light">
+                    <h5 class="text-purple">${algoritmo}</h5>
+                    <small>Algoritmo</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <h6 class="mb-3">🔬 Detalle:</h6>
+        `;
+
+        (data.componentes || []).forEach(comp => {
+          const numNodos = comp.num_nodos ?? 0;
+          const numAristas = comp.num_aristas ?? 'N/A';
+          const densidad = comp.densidad !== undefined ? comp.densidad.toFixed(4) : 'N/A';
+          const gradoProm = comp.grado_promedio !== undefined ? comp.grado_promedio.toFixed(2) : 'N/A';
+
+          html += `
+            <div class="card mb-2">
+              <div class="card-body">
+                <h6>Componente ${comp.id ?? '?'}</h6>
+                <p class="small text-muted mb-2">
+                  <strong>Nodos:</strong> ${numNodos} | 
+                  <strong>Aristas:</strong> ${numAristas} | 
+                  <strong>Densidad:</strong> ${densidad} | 
+                  <strong>Grado prom.:</strong> ${gradoProm}
+                </p>
+                ${comp.articulos_muestra?.length ? `
+                <p class="small mb-1"><strong>Muestra:</strong></p>
+                <ul class="small mb-0">
+                  ${comp.articulos_muestra.map(art => 
+                    `<li><code>${art.id}</code> ${art.title || 'Sin título'} (${art.citaciones || 0} cit.)</li>`
+                  ).join('')}
+                </ul>` : ''}
+              </div>
+            </div>
+          `;
+        });
+
+        componentesCitacionesContainer.innerHTML = html;
+        componentesCitacionesContainer.style.display = 'block';
+
+      } catch (err) {
+        console.error('Error:', err);
+        alert('Error al analizar componentes: ' + err.message);
+      } finally {
+        spinner.style.display = 'none';
+        btnText.textContent = '🔬 Analizar Componentes';
+        btnComponentesCitaciones.disabled = false;
+      }
+    });
+  }
+
+const btnCargarCoocurrencia = document.getElementById("btnCargarCoocurrencia");
+const analisisCoocurrencia = document.getElementById("analisisCoocurrencia");
+if (btnCargarCoocurrencia) {
+  btnCargarCoocurrencia.addEventListener("click", async () => {
+    const spinner = btnCargarCoocurrencia.querySelector(".spinner-border");
+    const btnText = btnCargarCoocurrencia.querySelector(".btn-text");
+    spinner.style.display = "inline-block";
+    btnText.textContent = "Generando...";
+    btnCargarCoocurrencia.disabled = true;
+    analisisCoocurrencia.innerHTML = "<p class='text-info'>⏳ Generando grafo...</p>";
+    try {
+      const res = await fetch("/grafo-coocurrencia");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.error) {
+        analisisCoocurrencia.innerHTML = `<div class="alert alert-danger">❌ ${data.error}</div>`;
+        return;
+      }
+      const resumen = data["Construcción automática del grafo"] || "Sin resumen";
+      const grado = data["Cálculo del grado (términos más conectados)"] || [];
+      const componentes = data["Detección de componentes conexas"] || { 
+        num_componentes: 0, tamano_componentes: [] 
+      };
+      const estadisticas = data["estadisticas_adicionales"] || null;
+      const imagenBase64 = data.grafico_base64 || null;
+      let html = `
+        <h6 class="text-success mb-3">✅ Análisis Completado</h6>
+        <div class="alert alert-info">${resumen}</div>
+      `;
+      // --- Estadísticas ---
+      if (estadisticas) {
+        html += `
+          <div class="border-start border-success border-4 ps-3 mb-3">
+            <h6 class="text-success mb-2"><span class="badge bg-success me-2">1</span>Estadísticas</h6>
+            <div class="row g-2">
+              <div class="col-md-3">
+                <div class="text-center p-2 bg-light rounded"><h5 class="text-success mb-0">${estadisticas.nodos}</h5><small>Nodos</small></div>
+              </div>
+              <div class="col-md-3">
+                <div class="text-center p-2 bg-light rounded"><h5 class="text-success mb-0">${estadisticas.aristas}</h5><small>Aristas</small></div>
+              </div>
+              <div class="col-md-3">
+                <div class="text-center p-2 bg-light rounded"><h5 class="text-success mb-0">${estadisticas.densidad}</h5><small>Densidad</small></div>
+              </div>
+              <div class="col-md-3">
+                <div class="text-center p-2 bg-light rounded"><h5 class="text-success mb-0">${estadisticas.grado_medio}</h5><small>Grado</small></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      // --- Grado ---
+      if (grado.length > 0) {
+        html += `
+          <div class="border-start border-warning border-4 ps-3 mb-3">
+            <h6 class="text-warning mb-2"><span class="badge bg-warning text-dark me-2">2</span> Términos más conectados</h6>
+            <table class="table table-sm table-striped">
+              <thead><tr><th>#</th><th>Término</th><th>Grado</th></tr></thead>
+              <tbody>
+        `;
+        grado.slice(0,10).forEach(([term, g], idx) => {
+          html += `<tr><td>${idx + 1}</td><td><code>${term}</code></td><td><span class="badge bg-warning text-dark">${g}</span></td></tr>`;
+        });
+        html += `</tbody></table></div>`;
+      }
+      // --- Componentes ---
+      html += `
+        <div class="border-start border-danger border-4 ps-3 mb-3">
+          <h6 class="text-danger mb-2"><span class="badge bg-danger me-2">3</span> Componentes Conexas</h6>
+          <p><strong>Total:</strong> ${componentes.num_componentes}</p>
+          <p><strong>Tamaños:</strong> ${componentes.tamano_componentes.join(', ') || 'N/A'}</p>
+        </div>
+      `;
+      // --- Imagen ---
+      if (imagenBase64) {
+        html += `
+          <div class="mt-4">
+            <h6 class="fw-bold mb-3">🖼 Visualización del Grafo de Coocurrencia</h6>
+            <div style="width: 100%; height: 600px; text-align: center; border: 1px solid #dee2e6; border-radius: 0.25rem; padding: 1rem;">
+              <img src="data:image/png;base64,${imagenBase64}" class="img-fluid rounded shadow-sm" style="max-height: 100%;">
+            </div>
+          </div>
+        `;
+      }
+      html += ``;
+      analisisCoocurrencia.innerHTML = html;
+    } catch (err) {
+      console.error("❌ Error:", err);
+      analisisCoocurrencia.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+    } finally {
+      spinner.style.display = "none";
+      btnText.textContent = " Generar Grafo de Coocurrencia";
+      btnCargarCoocurrencia.disabled = false;
+    }
+  });
+}
+});
+
+</script>
+
+<style>
+/* Estilos mejorados para visualización profesional */
+.card-header {
+  font-weight: 600;
+}
+
+#imagenGrafoContainer img {
+  transition: transform 0.3s ease;
+}
+
+#imagenGrafoContainer img:hover {
+  transform: scale(1.02);
+}
+
+.badge {
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.list-group-item {
+  transition: all 0.2s ease;
+}
+
+.list-group-item:hover {
+  background-color: #F8F9FA;
+  transform: translateX(5px);
+}
+
+.alert {
+  border-radius: 8px;
+  border: none;
+}
+
+.card {
+  transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+</style>
+
+<!-- ============================================================ -->
+<!-- SEGUIMIENTO 2 - REQUERIMIENTO 2: GRAFO DE COOCURRENCIA -->
+<!-- ============================================================ -->
+<div class="card mt-4" style="width: 90%; max-width: 1110px; margin: 0 auto; word-wrap: break-word; overflow-wrap: break-word;">  
+    <div class="card-header d-flex justify-content-between align-items-center">
+    <h5 class="mb-0 fw-bold">
+      Seguimiento 2 - Req. 2, Análisis de Coocurrencia de Términos
+    </h5>
+  </div>
+  <div class="card-body">
+    <p class="text-muted">
+      Construye un <strong>grafo no dirigido</strong> donde cada nodo es un término y cada arista 
+      conecta términos que coocurren en abstracts, utilizando palabras clave de los Requerimientos 3 y 4.
+    </p>
+
+    <button class="btn btn-primary mb-3" id="btnCargarCoocurrencia">
+      <span class="btn-text"> Generar Grafo de Coocurrencia</span>
+      <span class="spinner-border spinner-border-sm ms-2" style="display:none;"></span>
+    </button>
+
+    <div id="analisisCoocurrencia"></div>
+  </div>
+</div>
+
+    <footer class="text-center">
+        <div class="container">
+            <p class="mb-0">&copy; 2025-2  Proyecto de Análisis de Algoritmos. Facultad de Ingeniería de Sistemas y Computación, Universidad del Quindío.</p>
+        </div>
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const scraperForm = document.getElementById('scraper-form');
+        const runScraperBtn = document.getElementById('run-scraper-btn');
+        const scraperSpinner = document.getElementById('scraper-spinner');
+        const scraperOutput = document.getElementById('scraper-output');
+        const loadArticlesBtn = document.getElementById('load-articles-btn');
+        const articlesSpinner = document.getElementById('articles-spinner');
+        const similarityFormContainer = document.getElementById('similarity-form-container');
+        const article1Select = document.getElementById('article1');
+        const article2Select = document.getElementById('article2');
+        const calculateSimilarityBtn = document.getElementById('calculate-similarity-btn');
+        const similarityResultsTitle = document.getElementById('similarity-results-title');
+        const similarityResults = document.getElementById('similarity-results');
+        const similarityHr = document.getElementById('similarity-hr');
+        const runFrequencyAnalysisBtn = document.getElementById('run-frequency-analysis-btn');
+        const frequencySpinner = document.getElementById('frequency-spinner');
+        const frequencyResultsContainer = document.getElementById('frequency-results-container');
+        const sortingForm = document.getElementById('sorting-form');
+        const runSortingAnalysisBtn = document.getElementById('run-sorting-analysis-btn');
+        const sortingSpinner = document.getElementById('sorting-spinner');
+        const sortingResultsContainer = document.getElementById('sorting-results-container');
+        const clusteringForm = document.getElementById('clustering-form');
+        const runClusteringAnalysisBtn = document.getElementById('run-clustering-analysis-btn');
+        const clusteringSpinner = document.getElementById('clustering-spinner');
+        const clusteringResultsContainer = document.getElementById('clustering-results-container');
+        const runVisualizationAnalysisBtn = document.getElementById('run-visualization-analysis-btn');
+        const visualizationSpinner = document.getElementById('visualization-spinner');
+        const visualizationResultsContainer = document.getElementById('visualization-results-container');
+        const visualizationsContent = document.getElementById('visualizations-content');
+        const exportPdfBtn = document.getElementById('export-pdf-btn');
+        const pdfSpinner = document.getElementById('pdf-spinner');
+        let visualizacionesParaPDF = {};
+
+
+        function showSpinner(spinner) {
+            if(spinner) spinner.style.display = 'inline-block';
+        }
+
+        function hideSpinner(spinner) {
+            if(spinner) spinner.style.display = 'none';
+        }
+
+        if (scraperForm) {
+            scraperForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+                showSpinner(scraperSpinner);
+                runScraperBtn.disabled = true;
+                scraperOutput.textContent = 'Ejecutando scraper y unificador, por favor espera... (La salida aparecerá al final)';
+                fetch('/run-scraper', {
+                    method: 'POST',
+                    body: new FormData(scraperForm)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => { throw new Error(`Error del servidor: ${text}`) });
+                    }
+                    return response.text();
+                })
+                .then(data => {
+                    scraperOutput.textContent = data;
+                })
+                .catch(error => {
+                    scraperOutput.textContent = 'Error en la conexión o durante el proceso: ' + error;
+                })
+                .finally(() => {
+                    hideSpinner(scraperSpinner);
+                    runScraperBtn.disabled = false;
+                });
+            });
+        }
+
+        if (loadArticlesBtn) {
+            loadArticlesBtn.addEventListener('click', function() {
+                showSpinner(articlesSpinner);
+                loadArticlesBtn.disabled = true;
+                fetch('/articulos')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    article1Select.innerHTML = '';
+                    article2Select.innerHTML = '';
+                    data.forEach(article => {
+                        const option1 = new Option(article.title, article.id);
+                        const option2 = new Option(article.title, article.id);
+                        article1Select.add(option1);
+                        article2Select.add(option2);
+                    });
+                    similarityFormContainer.style.display = 'block';
+                    loadArticlesBtn.textContent = 'Artículos Cargados';
+                })
+                .catch(error => {
+                    alert('Error al cargar los artículos: ' + error);
+                })
+                .finally(() => {
+                    hideSpinner(articlesSpinner);
+                    loadArticlesBtn.disabled = false;
+                });
+            });
+        }
+
+        if (calculateSimilarityBtn) {
+            calculateSimilarityBtn.addEventListener('click', function() {
+                const article1Id = article1Select.value;
+                const article2Id = article2Select.value;
+                const algorithm = document.getElementById('similarity-algorithm').value;
+                if (!article1Id || !article2Id) {
+                    alert('Por favor, selecciona dos artículos.');
+                    return;
+                }
+                similarityResults.textContent = 'Calculando similitud...';
+                similarityResults.style.display = 'block';
+                similarityResultsTitle.style.display = 'block';
+                similarityHr.style.display = 'block';
+                fetch('/analizar-similitud', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        article_ids: [article1Id, article2Id],
+                        algoritmo: algorithm
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        similarityResults.textContent = 'Error: ' + data.error;
+                    } else {
+                        let resultText = `RESULTADO DEL ANÁLISIS\n`;
+                        resultText += `-----------------------\n`;
+                        resultText += `Algoritmo: ${data.algoritmo}\n`;
+                        resultText += `Similitud: ${data.similitud}\n\n`;
+                        resultText += `EXPLICACIÓN\n`;
+                        resultText += `-----------------------\n`;
+                        resultText += `${data.explicacion}`;
+                        similarityResults.innerText = resultText;
+                    }
+                })
+                .catch(error => {
+                    similarityResults.textContent = 'Error en la conexión: ' + error;
+                });
+            });
+        }
+
+        if (runFrequencyAnalysisBtn) {
+            runFrequencyAnalysisBtn.addEventListener('click', function() {
+                showSpinner(frequencySpinner);
+                runFrequencyAnalysisBtn.disabled = true;
+                frequencyResultsContainer.style.display = 'block';
+                frequencyResultsContainer.innerHTML = '<p>Ejecutando análisis de frecuencia...</p>';
+                fetch('/analizar-frecuencia', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        frequencyResultsContainer.innerHTML = `<p class="text-danger">Error: ${data.error}</p>`;
+                    } else {
+                        let html = '';
+                        html += '<div class="mx-auto text-center">';
+                        html += '<h4 class="text-center mb-3">Frecuencia de Palabras Clave Predefinidas</h4>';
+                        html += `<img src="data:image/png;base64,${data.grafico_frecuencias_dadas}" class="img-fluid rounded shadow-sm mb-5" alt="Gráfico de Frecuencias Dadas" style="width:75%; height:auto;">`;
+                        html += '</div>';
+
+                        html += '<div class="mx-auto text-center">';
+                        html += '<h4 class="text-center mb-3">Frecuencia de Nuevas Palabras Clave (TF-IDF)</h4>';
+                        html += `<img src="data:image/png;base64,${data.grafico_frecuencias_generadas}" class="img-fluid rounded shadow-sm mb-5" alt="Gráfico de Frecuencias Generadas" style="width:75%; height:auto;">`;
+                        html += '</div>';
+
+                        html += '<hr class="my-4">';
+                        html += '<h4 class="text-center">Precisión del Modelo TF-IDF</h4>';
+                        html += `<p class="text-center">El modelo TF-IDF generó <strong>${Object.keys(data.frecuencias_generadas).length}</strong> palabras clave. De estas, <strong>${data.palabras_comunes.length}</strong> coincidieron con la lista predefinida.</p>`;
+                        html += `<div class="progress mx-auto" style="height: 25px; max-width: 80%;">`;
+                        html += `  <div class="progress-bar" role="progressbar" style="width: ${data.precision * 100}%;" aria-valuenow="${data.precision * 100}" aria-valuemin="0" aria-valuemax="100">${(data.precision * 100).toFixed(2)}% de Precisión</div>`;
+                        html += `</div>`;
+                        if(data.palabras_comunes.length > 0) {
+                            html += `<p class="text-center mt-3"><strong>Palabras comunes encontradas:</strong> ${data.palabras_comunes.join(', ')}</p>`;
+                        }
+                        frequencyResultsContainer.innerHTML = html;
+                    }
+                })
+                .catch(error => {
+                    frequencyResultsContainer.innerHTML = `<p class="text-danger">Error en la conexión o al procesar la respuesta: ${error}</p>`;
+                })
+                .finally(() => {
+                    hideSpinner(frequencySpinner);
+                    runFrequencyAnalysisBtn.disabled = false;
+                });
+            });
+        }
+
+        if (sortingForm) {
+            sortingForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                showSpinner(sortingSpinner);
+                runSortingAnalysisBtn.disabled = true;
+                sortingResultsContainer.style.display = 'block';
+                sortingResultsContainer.innerHTML = '<div class="text-center"><p>Ejecutando análisis de ordenamiento... Esto puede tardar unos segundos.</p><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+
+                const formData = new FormData(sortingForm);
+                const size = formData.get('size');
+                const algorithm = formData.get('algorithm');
+
+                fetch('/analizar-ordenamiento', { 
+                    method: 'POST',
+                    body: new URLSearchParams({ size, algorithm })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        sortingResultsContainer.innerHTML = `<p class="text-danger">Error: ${data.error}</p>`;
+                        return;
+                    }
+
+                    let html = '<div class="row"><div class="col-12">';
+
+                    if (data.output_file) {
+                        html += `<a href="/download/${data.output_file}" class="btn btn-success mb-4">Descargar Archivo .bib Completo</a>`;
+                    }
+
+                    if (data.articulos_ordenados && data.articulos_ordenados.length > 0) {
+                        html += '<h5>Primeros 100 Artículos Ordenados por Año y Título</h5>';
+                        html += '<div class="table-responsive" style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.25rem;">';
+                        html += '<table class="table table-striped table-hover table-sm"><thead><tr><th scope="col">Año</th><th scope="col">Título</th></tr></thead><tbody>';
+                        data.articulos_ordenados.forEach(art => {
+                            html += `<tr><td>${art.year}</td><td>${art.title}</td></tr>`;
+                        });
+                        html += '</tbody></table></div><hr class="my-4">';
+                    }
+
+                    if (data.tabla_algoritmos && data.tabla_algoritmos.length > 0) {
+                        html += '<h5>Resultados de Rendimiento de Algoritmos</h5>';
+                        html += '<div class="table-responsive"><table class="table table-bordered table-sm"><thead><tr><th scope="col">Algoritmo</th><th scope="col">Complejidad</th><th scope="col">Muestra</th><th scope="col">Tiempo (s)</th></tr></thead><tbody>';
+                        data.tabla_algoritmos.forEach(res => {
+                            const time = res[3] === -1 ? '<span class="text-danger">Error</span>' : res[3].toFixed(6);
+                            html += `<tr><td>${res[0]}</td><td><code>${res[1]}</code></td><td>${res[2]}</td><td>${time}</td></tr>`;
+                        });
+                        html += '</tbody></table></div><hr class="my-4">';
+                    }
+
+                    if (data.grafico_algoritmos_base64) {
+                        html += `<div class="w-75 mx-auto mb-5"><h5 class="text-center mb-3">Gráfico de Rendimiento</h5><img src="data:image/png;base64,${data.grafico_algoritmos_base64}" class="img-fluid rounded shadow-sm" alt="Gráfico de Algoritmos"></div>`;
+                    }
+
+                    if (data.autores_ordenados && data.autores_ordenados.length > 0) {
+                        html += '<h5>Principales Autores Encontrados</h5>';
+                        html += '<p class="text-muted small">El siguiente conteo se basa en la frecuencia de aparición de los nombres de autor exactos (método: <code>collections.Counter</code>). Por defecto en Python.</p>';
+                        html += '<div class="table-responsive" style="max-height: 400px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.25rem;">';
+                        html += '<table class="table table-striped table-hover table-sm"><thead><tr><th scope="col">Autor</th><th scope="col"># Publicaciones</th></tr></thead><tbody>';
+                        const autoresDesc = [...data.autores_ordenados].sort((a, b) => b[1] - a[1]);
+                        autoresDesc.forEach(auth => {
+                            html += `<tr><td>${auth[0]}</td><td>${auth[1]}</td></tr>`;
+                        });
+                        html += '</tbody></table></div><hr class="my-4">';
+                    }
+
+                    if (data.grafico_autores_base64) {
+                        html += `<div class="w-75 mx-auto mb-5"><h5 class="text-center mb-3">Gráfico de Autores</h5><img src="data:image/png;base64,${data.grafico_autores_base64}" class="img-fluid rounded shadow-sm" alt="Gráfico de Autores"></div>`;
+                    }
+
+                    if (data.debug_info) {
+                        html += '<h5>Información de Diagnóstico</h5>';
+                        html += `<pre style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 1rem; border-radius: 0.25rem;">`;
+                        html += `Se ejecutó con 'Todos los Algoritmos': <strong>${data.debug_info.is_all_algorithms}</strong>\n`;
+                        html += `Gráfico de Rendimiento Generado: <strong>${data.debug_info.performance_graph_generated}</strong>\n`;
+                        html += `Autores Top Encontrados: <strong>${data.debug_info.top_author_count}</strong>\n`;
+                        html += `Gráfico de Autores Generado: <strong>${data.debug_info.author_graph_generated}</strong>`;
+                        html += `</pre>`;
+                    }
+
+                    html += '</div></div>';
+                    sortingResultsContainer.innerHTML = html;
+                })
+                .catch(error => {
+                    sortingResultsContainer.innerHTML = `<p class="text-danger">Error en la conexión: ${error}</p>`;
+                })
+                .finally(() => {
+                    hideSpinner(sortingSpinner);
+                    runSortingAnalysisBtn.disabled = false;
+                });
+            });
+        }
+
+        if (clusteringForm) {
+            clusteringForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                showSpinner(clusteringSpinner);
+                runClusteringAnalysisBtn.disabled = true;
+                clusteringResultsContainer.style.display = 'block';
+                clusteringResultsContainer.innerHTML = '<div class="text-center"><p>Ejecutando análisis de agrupamiento... Esto puede tardar unos segundos.</p><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+
+                const formData = new FormData(clusteringForm);
+
+                fetch('/analizar-agrupamiento', { 
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        clusteringResultsContainer.innerHTML = `<p class="text-danger">Error: ${data.error}</p>`;
+                        return;
+                    }
+
+                    let html = '<div class="row"><div class="col-12">';
+                    
+                    html += `<h4 class="text-center mb-3">Dendrograma con Método: <strong>${data.metodo_usado.charAt(0).toUpperCase() + data.metodo_usado.slice(1)}</strong></h4>`;
+                    html += `<p class="text-center text-muted">Análisis sobre una muestra de ${data.num_articulos_analizados} artículos del archivo <code>articulos_unicos.bib</code>.</p>`;
+
+                    html += `<div class="text-center mb-4"><img src="data:image/png;base64,${data.grafico_dendrograma_base64}" class="img-fluid rounded shadow-sm" alt="Dendrograma"></div>`;
+                    
+                    html += '<div class="row">';
+                    html += '  <div class="col-md-6">';
+                    html += '    <h5>Cómo Interpretar el Gráfico</h5>';
+                    html += `    <div style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 1rem; border-radius: 0.25rem; white-space: pre-wrap; height: 100%;">${data.dendrograma_explicacion}</div>`;
+                    html += '  </div>';
+                    html += '  <div class="col-md-6">';
+                    html += '    <h5>Explicación del Método</h5>';
+                    html += `    <div style="background-color: #f8f9fa; border: 1px solid #dee2e6; padding: 1rem; border-radius: 0.25rem; white-space: pre-wrap; height: 100%;">${data.explicacion_metodo}</div>`;
+                    html += '  </div>';
+                    html += '</div>';
+
+                    html += '</div></div>';
+                    clusteringResultsContainer.innerHTML = html;
+                })
+                .catch(error => {
+                    clusteringResultsContainer.innerHTML = `<p class="text-danger">Error en la conexión: ${error}</p>`;
+                })
+                .finally(() => {
+                    hideSpinner(clusteringSpinner);
+                    runClusteringAnalysisBtn.disabled = false;
+                });
+            });
+        }
+
+        // Requerimiento 5: Visualizaciones
+        if (runVisualizationAnalysisBtn) {
+            runVisualizationAnalysisBtn.addEventListener('click', function() {
+                showSpinner(visualizationSpinner);
+                runVisualizationAnalysisBtn.disabled = true;
+                visualizationsContent.innerHTML = '<div class="text-center"><p>Generando visualizaciones... Esto puede tardar un momento.</p><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+                visualizationResultsContainer.style.display = 'block';
+                exportPdfBtn.disabled = true;
+
+                fetch('/generar-visualizaciones', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        visualizationsContent.innerHTML = `<p class="text-danger">Error: ${data.error}</p>`;
+                        return;
+                    }
+
+                    visualizacionesParaPDF = {
+                        mapa_calor: data.mapa_calor_base64,
+                        nube_palabras: data.nube_palabras_base64,
+                        linea_tiempo: data.linea_tiempo_base64,
+                        linea_tiempo_revista: data.linea_tiempo_revista_base64,
+                        mapa_calor_pdf_data: data.mapa_calor_pdf_data
+                    };
+
+                    let html = '<div class="row gy-4">';
+                    const explicaciones = data.explicaciones || {};
+
+                    if (data.mapa_calor_json) {
+                        html += `<div class="col-12">`;
+                        html += `  <div class="card shadow-sm">`;
+                        html += `    <div class="card-header">1. Distribución Geográfica de Publicaciones</div>`;
+                        html += `    <div class="card-body">`;
+                        html += `      <p class="card-text text-muted small">${explicaciones.mapa_calor || ''}</p>`;
+                        html += `      <div id="mapa-calor-plot"></div>`;
+                        html += `    </div>`;
+                        html += `  </div>`;
+                        html += `</div>`;
+                    }
+
+                    if (data.nube_palabras_base64) {
+                        html += `<div class="col-12 col-lg-6">`;
+                        html += `  <div class="card shadow-sm">`;
+                        html += `    <div class="card-header">2. Nube de Palabras</div>`;
+                        html += `    <div class="card-body text-center">`;
+                        html += `      <p class="card-text text-muted small">${explicaciones.nube_palabras || ''}</p>`;
+                        html += `      <img src="data:image/png;base64,${data.nube_palabras_base64}" class="img-fluid rounded" alt="Nube de Palabras">`;
+                        html += `    </div>`;
+                        html += `  </div>`;
+                        html += `</div>`;
+                    }
+
+                    if (data.linea_tiempo_base64) {
+                        html += `<div class="col-12 col-lg-6">`;
+                        html += `  <div class="card shadow-sm">`;
+                        html += `    <div class="card-header">3. Publicaciones por Año</div>`;
+                        html += `    <div class="card-body text-center">`;
+                        html += `      <p class="card-text text-muted small">${explicaciones.linea_tiempo || ''}</p>`;
+                        html += `      <img src="data:image/png;base64,${data.linea_tiempo_base64}" class="img-fluid rounded" alt="Línea de Tiempo por Año">`;
+                        html += `    </div>`;
+                        html += `  </div>`;
+                        html += `</div>`;
+                    }
+
+                    if (data.linea_tiempo_revista_base64) {
+                        html += `<div class="col-12">`;
+                        html += `  <div class="card shadow-sm">`;
+                        html += `    <div class="card-header">4. Publicaciones por Año y Revista (Top 10)</div>`;
+                        html += `    <div class="card-body text-center">`;
+                        html += `      <p class="card-text text-muted small">${explicaciones.linea_tiempo_revista || ''}</p>`;
+                        html += `      <img src="data:image/png;base64,${data.linea_tiempo_revista_base64}" class="img-fluid rounded" alt="Línea de Tiempo por Revista">`;
+                        html += `    </div>`;
+                        html += `  </div>`;
+                        html += `</div>`;
+                    }
+
+                    html += '</div>';
+                    visualizationsContent.innerHTML = html;
+
+                    if (data.mapa_calor_json) {
+                        try {
+                            const mapaData = JSON.parse(data.mapa_calor_json);
+                            Plotly.newPlot('mapa-calor-plot', mapaData.data, mapaData.layout, { responsive: true });
+                        } catch (e) {
+                            document.getElementById('mapa-calor-plot').innerHTML = `<p class="text-danger">Error al renderizar el mapa: ${e.message}</p>`;
+                        }
+                    }
+                    
+                    exportPdfBtn.disabled = false;
+                })
+                .catch(error => {
+                    visualizationsContent.innerHTML = `<p class="text-danger">Error en la conexión: ${error}</p>`;
+                })
+                .finally(() => {
+                    hideSpinner(visualizationSpinner);
+                    runVisualizationAnalysisBtn.disabled = false;
+                });
+            });
+        }
+
+        if (exportPdfBtn) {
+            exportPdfBtn.addEventListener('click', function() {
+                if (Object.keys(visualizacionesParaPDF).length === 0) {
+                    alert('Primero debes generar las visualizaciones.');
+                    return;
+                }
+
+                showSpinner(pdfSpinner);
+                exportPdfBtn.disabled = true;
+
+                fetch('/exportar-visualizaciones-pdf', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(visualizacionesParaPDF)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(`Error al generar el PDF: ${data.error}`);
+                    } else {
+                        const link = document.createElement('a');
+                        link.href = `/download/reporte/${data.output_file}`;
+                        link.download = data.output_file;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }
+                })
+                .catch(error => {
+                    alert(`Error en la conexión al exportar PDF: ${error}`);
+                })
+                .finally(() => {
+                    hideSpinner(pdfSpinner);
+                    exportPdfBtn.disabled = false;
+                });
+            });
+        }
+    });
+    </script>
+
+</body>
+</html>
