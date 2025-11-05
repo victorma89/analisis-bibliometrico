@@ -20,14 +20,14 @@ from pydantic import BaseModel
 import importlib
 
 # Importar la lógica de los requerimientos de forma dinámica
-analizador_similitud = importlib.import_module("app.2_similitud_texto.analizador_similitud")
-analizador_ordenamiento = importlib.import_module("app.3_analisis_ordenamiento.analizador_ordenamiento")
-analizador_frecuencias = importlib.import_module("app.3_frecuencia_palabras.analizador_frecuencias")
-analizador_cluster = importlib.import_module("app.4_agrupamiento_jerarquico.analizador_cluster")
-generador_visualizaciones = importlib.import_module("app.5_analisis_visual.generador_visualizaciones")
-analizador_grafos = importlib.import_module("app.6_analisis_grafos.analizador_grafos")
-analizador_citaciones = importlib.import_module("app.1_procesamiento_datos.analizador_citaciones")
-analisis_concurrencia = importlib.import_module("app.7_concurrencia.analisis_concurrencia")
+# analizador_similitud = importlib.import_module("app.2_similitud_texto.analizador_similitud")
+# analizador_ordenamiento = importlib.import_module("app.3_analisis_ordenamiento.analizador_ordenamiento")
+# analizador_frecuencias = importlib.import_module("app.3_frecuencia_palabras.analizador_frecuencias")
+# analizador_cluster = importlib.import_module("app.4_agrupamiento_jerarquico.analizador_cluster")
+# generador_visualizaciones = importlib.import_module("app.5_analisis_visual.generador_visualizaciones")
+# analizador_grafos = importlib.import_module("app.6_analisis_grafos.analizador_grafos")
+# analizador_citaciones = importlib.import_module("app.1_procesamiento_datos.analizador_citaciones")
+# analisis_concurrencia = importlib.import_module("app.7_concurrencia.analisis_concurrencia")
 
 
 # Fix para NotImplementedError en Windows con asyncio.subprocess
@@ -169,6 +169,7 @@ async def get_articulos():
     """
     Carga y devuelve la lista de artículos desde el archivo .bib.
     """
+    analizador_similitud = importlib.import_module("app.2_similitud_texto.analizador_similitud")
     articulos = analizador_similitud.cargar_articulos()
     if not articulos:
         return JSONResponse(content={"error": "No se pudo cargar la lista de artículos. Asegúrate de haber generado el archivo 'articulos_unicos.bib' primero."}, status_code=404)
@@ -184,6 +185,7 @@ async def analizar_similitud(request_data: AnalisisSimilitudRequest):
     """
     Recibe dos IDs de artículos y el algoritmo a usar, y calcula la similitud.
     """
+    analizador_similitud = importlib.import_module("app.2_similitud_texto.analizador_similitud")
     if len(request_data.article_ids) != 2:
         return JSONResponse(content={"error": "Por favor, selecciona exactamente dos artículos para comparar."}, status_code=400)
 
@@ -223,6 +225,7 @@ async def analizar_frecuencia():
     """
     Ejecuta el análisis de frecuencia de palabras, incluyendo la generación de gráficos.
     """
+    analizador_frecuencias = importlib.import_module("app.3_frecuencia_palabras.analizador_frecuencias")
     if not BIB_FILE_PATH.exists():
         return JSONResponse(
             content={"error": f"El archivo '{BIB_FILE_PATH.name}' no existe. Asegúrate de generarlo primero con el Requerimiento 1."}, 
@@ -272,6 +275,7 @@ async def analizar_agrupamiento(metodo: str = Form(...), num_articulos: int = Fo
     """
     Ejecuta el análisis de agrupamiento jerárquico.
     """
+    analizador_cluster = importlib.import_module("app.4_agrupamiento_jerarquico.analizador_cluster")
     if not BIB_FILE_PATH.exists():
         return JSONResponse(
             content={"error": f"El archivo '{BIB_FILE_PATH.name}' no existe. Genéralo primero con el Requerimiento 1."}, 
@@ -311,6 +315,7 @@ async def generar_visualizaciones():
     """
     Ejecuta la generación de todas las visualizaciones del Requerimiento 5.
     """
+    generador_visualizaciones = importlib.import_module("app.5_analisis_visual.generador_visualizaciones")
     if not BIB_FILE_PATH.exists():
         return JSONResponse(
             content={"error": f"El archivo '{BIB_FILE_PATH.name}' no existe. Genéralo primero con el Requerimiento 1."}, 
@@ -340,6 +345,7 @@ async def exportar_visualizaciones_pdf(request_data: VisualizacionesPDFRequest):
     """
     Recibe las imágenes en base64 y las exporta a un archivo PDF.
     """
+    generador_visualizaciones = importlib.import_module("app.5_analisis_visual.generador_visualizaciones")
     loop = asyncio.get_running_loop()
     try:
         imagenes_dict = {
@@ -379,6 +385,7 @@ async def analizar_citaciones_endpoint(
     """
     Ejecuta el análisis de grafos de citaciones.
     """
+    analizador_grafos = importlib.import_module("app.6_analisis_grafos.analizador_grafos")
     if not BIB_FILE_PATH.exists():
         return JSONResponse(
             content={"error": f"El archivo '{BIB_FILE_PATH.name}' no existe. Genéralo primero."}, 
@@ -426,6 +433,7 @@ async def post_analizar_ordenamiento(size: int = Form(...), algorithm: str = For
     """
     Ejecuta el análisis completo de los algoritmos de ordenamiento.
     """
+    analizador_ordenamiento = importlib.import_module("app.3_analisis_ordenamiento.analizador_ordenamiento")
     if not BIB_FILE_PATH.exists():
         return JSONResponse(
             content={"error": f"El archivo '{BIB_FILE_PATH.name}' no existe. Asegúrate de generarlo primero con el Requerimiento 1."}, 
@@ -471,6 +479,7 @@ async def grafo_citaciones(
     Query params:
         - min_citaciones: Filtrar artículos con al menos N citaciones
     """
+    analizador_citaciones = importlib.import_module("app.1_procesamiento_datos.analizador_citaciones")
     try:
         bib_path = PROJECT_ROOT / "datos" / "procesados" / "articulos_unicos.bib"
         if not bib_path.exists():
@@ -538,6 +547,7 @@ async def valores_citaciones():
     Devuelve lista de valores sugeridos para el filtro de citaciones
     basado en los grados de entrada (in-degree) del grafo.
     """
+    analizador_citaciones = importlib.import_module("app.1_procesamiento_datos.analizador_citaciones")
     try:
         bib_path = PROJECT_ROOT / "datos" / "procesados" / "articulos_unicos.bib"
         if not bib_path.exists():
@@ -589,6 +599,7 @@ async def post_analizar_grafo(request: Request):
       { "thr": 0.25 }  -> devuelve grafo + analisis
       { "thr":0.25, "origen": "ID1", "destino":"ID2" } -> además devuelve camino mínimo
     """
+    analizador_citaciones = importlib.import_module("app.1_procesamiento_datos.analizador_citaciones")
     try:
         body = await request.json()
         thr = float(body.get("thr", 0.25))
@@ -632,6 +643,7 @@ async def get_camino_minimo(
         - destino: ID del artículo final
         - algoritmo: "dijkstra" (default) o "floyd-warshall"
     """
+    analizador_citaciones = importlib.import_module("app.1_procesamiento_datos.analizador_citaciones")
     try:
         bib_path = PROJECT_ROOT / "datos" / "procesados" / "articulos_unicos.bib"
         if not bib_path.exists():
@@ -706,6 +718,7 @@ async def analizar_citaciones_endpoint(
         - origen: ID origen (solo para camino_minimo)
         - destino: ID destino (solo para camino_minimo)
     """
+    analizador_citaciones = importlib.import_module("app.1_procesamiento_datos.analizador_citaciones")
     try:
         bib_path = PROJECT_ROOT / "datos" / "procesados" / "articulos_unicos.bib"
         if not bib_path.exists():
@@ -852,6 +865,7 @@ async def download_reporte(filename: str):
 @app.get("/grafo-coocurrencia")
 async def grafo_coocurrencia():
     try:
+        analisis_concurrencia = importlib.import_module("app.7_concurrencia.analisis_concurrencia")
         resultado = analisis_concurrencia.analizar_grafo_coocurrencia()
 
         return resultado  
