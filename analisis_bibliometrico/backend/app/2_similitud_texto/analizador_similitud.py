@@ -2,7 +2,7 @@ import bibtexparser
 import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from sentence_transformers import SentenceTransformer, util
+# from sentence_transformers import SentenceTransformer, util
 
 # --- Constantes y Modelos de IA cacheados ---
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
@@ -112,10 +112,7 @@ EXPLICACIONES = {
 # --- Funciones de Lógica Principal ---
 
 def cargar_articulos():
-    print(f"--- DEBUG: Intentando cargar artículos desde: {BIB_FILE_PATH}")
-    file_exists = os.path.exists(BIB_FILE_PATH)
-    print(f"--- DEBUG: ¿El archivo existe? {file_exists}")
-    if not file_exists:
+    if not os.path.exists(BIB_FILE_PATH):
         return []
     with open(BIB_FILE_PATH, 'r', encoding='utf-8') as bibtex_file:
         parser = bibtexparser.bparser.BibTexParser(common_strings=True)
@@ -221,6 +218,7 @@ def analizar_similitud_dice(articulos, id1, id2):
     }
 
 def analizar_similitud_ia(articulos, id1, id2, model_name):
+    from sentence_transformers import SentenceTransformer, util
     abstract1, abstract2, error = _get_abstracts(articulos, id1, id2)
     if error:
         return error
