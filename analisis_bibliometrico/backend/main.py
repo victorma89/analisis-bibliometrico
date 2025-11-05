@@ -169,16 +169,23 @@ async def get_articulos():
     """
     Carga y devuelve la lista de artículos desde el archivo .bib.
     """
-    analizador_similitud = importlib.import_module("app.2_similitud_texto.analizador_similitud")
-    articulos = analizador_similitud.cargar_articulos()
-    if not articulos:
-        return JSONResponse(content={"error": "No se pudo cargar la lista de artículos. Asegúrate de haber generado el archivo 'articulos_unicos.bib' primero."}, status_code=404)
-    
-    articulos_simplificados = [
-        {"id": articulo.get('ID', ''), "title": articulo.get('title', 'Sin título')}
-        for articulo in articulos
-    ]
-    return JSONResponse(content=articulos_simplificados)
+    try:
+        analizador_similitud = importlib.import_module("app.2_similitud_texto.analizador_similitud")
+        articulos = analizador_similitud.cargar_articulos()
+        if not articulos:
+            return JSONResponse(content={"error": "No se encontraron artículos en 'articulos_unicos.bib'. Asegúrate de haber ejecutado el Requerimiento 1 primero."}, status_code=404)
+        
+        articulos_simplificados = [
+            {"id": articulo.get('ID', ''), "title": articulo.get('title', 'Sin título')}
+            for articulo in articulos
+        ]
+        return JSONResponse(content=articulos_simplificados)
+    except FileNotFoundError:
+        return JSONResponse(content={"error": "El archivo 'articulos_unicos.bib' no fue encontrado. Este archivo se genera con el Requerimiento 1 y puede que se haya perdido si el servidor se reinició."}, status_code=404)
+    except Exception as e:
+        # Captura cualquier otro error inesperado
+        traceback.print_exc()
+        return JSONResponse(content={"error": f"Ocurrió un error inesperado al cargar los artículos: {str(e)}"}, status_code=500)
 
 @app.post("/analizar-similitud")
 async def analizar_similitud(request_data: AnalisisSimilitudRequest):
