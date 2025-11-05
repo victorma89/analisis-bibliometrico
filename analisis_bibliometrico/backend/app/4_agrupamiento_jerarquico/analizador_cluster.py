@@ -174,7 +174,7 @@ if __name__ == '__main__':
         print(f"  Error: {resultado_ward['error']}")
     else:
         print(f"  Análisis completado para {resultado_ward['num_articulos_analizados']} artículos.")
-        print(f"  Gráfico generado: {resultado_ward['grafico_dendrograma_base64' is not None]}")
+        print(f"  Gráfico generado: {'grafico_dendrograma_base64' in resultado_ward}")
 
     # Prueba con el método 'average'
     print("\nEjecutando con método: 'average'")
@@ -183,6 +183,6 @@ if __name__ == '__main__':
         print(f"  Error: {resultado_avg['error']}")
     else:
         print(f"  Análisis completado para {resultado_avg['num_articulos_analizados']} artículos.")
-        print(f"  Gráfico generado: {resultado_avg['grafico_dendrograma_base64' is not None]}")
+        print(f"  Gráfico generado: {'grafico_dendrograma_base64' in resultado_avg}")
 
     print("\n--- Pruebas finalizadas ---")
