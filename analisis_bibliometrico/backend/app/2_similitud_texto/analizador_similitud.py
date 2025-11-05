@@ -112,7 +112,10 @@ EXPLICACIONES = {
 # --- Funciones de Lógica Principal ---
 
 def cargar_articulos():
-    if not os.path.exists(BIB_FILE_PATH):
+    print(f"--- DEBUG: Intentando cargar artículos desde: {BIB_FILE_PATH}")
+    file_exists = os.path.exists(BIB_FILE_PATH)
+    print(f"--- DEBUG: ¿El archivo existe? {file_exists}")
+    if not file_exists:
         return []
     with open(BIB_FILE_PATH, 'r', encoding='utf-8') as bibtex_file:
         parser = bibtexparser.bparser.BibTexParser(common_strings=True)
